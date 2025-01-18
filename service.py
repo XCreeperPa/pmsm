@@ -35,23 +35,48 @@ def force_stop_instance(instance_name: str):
     return {"status": "force_stopping"}
 
 @app.get("/logs/{instance_name}")
-async def get_logs(instance_name: str, start_time: str = None):
+async def get_logs(
+    instance_name: str,
+    start_id: int = None,
+    start_id_min: int = None,
+    start_id_max: int = None,
+    start_time: str = None,
+    end_time: str = None,
+    search: str = None
+):
     try:
-        # 转换时间字符串为 datetime 对象
+        # 转换时间字符串为日期时间对象
         start_datetime = None
+        end_datetime = None
         if start_time:
             try:
                 start_datetime = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
             except ValueError:
-                raise HTTPException(status_code=400, detail="Invalid datetime format. Use YYYY-MM-DD HH:MM:SS")
+                raise HTTPException(status_code=400, detail="Invalid start_time format")
+        if end_time:
+            try:
+                end_datetime = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid end_time format")
 
-        logs = log_manager.get_logs(instance_name, start_datetime)
+        start_id_range = (start_id_min, start_id_max) if start_id_min and start_id_max else None
+        
+        # 直接传递搜索模式
+        logs = log_manager.get_logs(
+            instance_name=instance_name,
+            start_id=start_id,
+            start_id_range=start_id_range,
+            start_time=start_datetime,
+            end_time=end_datetime,
+            search_pattern=search
+        )
+        
         if logs is None:
             logs = []
-            
+
         return {"status": "success", "logs": logs}
     except Exception as e:
-        traceback.print_exc()  # 打印详细错误信息到控制台
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 # 添加错误处理

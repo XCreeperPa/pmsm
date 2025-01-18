@@ -78,11 +78,6 @@ python pmsm.py start --instance <实例名称>
 python pmsm.py cmd --instance <实例名称> --cmd <命令>
 ```
 
-### 查看日志
-```bash
-python pmsm.py logs --instance <实例名称> [--start-time "YYYY-MM-DD HH:MM:SS"]
-```
-
 ### 停止实例
 ```bash
 python pmsm.py stop --instance <实例名称>
@@ -92,6 +87,77 @@ python pmsm.py stop --instance <实例名称>
 ```bash
 python pmsm.py force-stop --instance <实例名称>
 ```
+
+### 日志管理
+
+#### 查看和搜索日志
+
+可选参数：
+
+- `--start-id <ID或ID范围>`
+  - 类型：整数或范围（例如：'3' 或 '1-5'）
+  - 默认值：最后一次启动的ID
+  - 用途：按启动次数筛选日志
+  - 说明：可以指定单个ID或ID范围，例如 `--start-id 3` 或 `--start-id 1-5`
+
+- `--start-time <时间戳>`
+  - 类型：字符串，格式为 "YYYY-MM-DD HH:MM:SS"
+  - 默认值：无（不过滤）
+  - 用途：设置日志查询的起始时间
+  - 示例：`--start-time "2024-01-20 20:00:00"`
+
+- `--end-time <时间戳>`
+  - 类型：字符串，格式为 "YYYY-MM-DD HH:MM:SS"
+  - 默认值：无（不过滤）
+  - 用途：设置日志查询的结束时间
+  - 示例：`--end-time "2024-01-20 21:00:00"`
+
+- `--search <搜索模式>`
+  - 类型：字符串，支持通配符
+  - 默认值：无（不过滤）
+  - 用途：在日志内容中搜索指定模式
+  - 通配符：使用 `*` 表示任意字符
+  - 转义：使用 `\*` 表示字面值的星号
+  - 示例：
+    - `--search "Player*joined"` 匹配所有包含"Player"开头"joined"结尾的日志
+    - `--search "*error*"` 匹配所有包含"error"的日志
+    - `--search "test\*test"` 匹配包含"test*test"的日志
+
+**示例用法**
+
+- 查看最后一次启动的所有日志：
+  ```bash
+  logviewer
+  ```
+
+- 查看指定时间范围的日志：
+  ```bash
+  logviewer --start-time "2024-01-20 20:00:00" --end-time "2024-01-20 21:00:00"
+  ```
+
+- 查看指定启动ID范围的日志：
+  ```bash
+  logviewer --start-id 1-5
+  ```
+
+- 搜索包含特定内容的日志：
+  ```bash
+  logviewer --search "*error*"
+  ```
+
+- 组合多个条件：
+  ```bash
+  logviewer --start-id 3 --start-time "2024-01-20 20:00:00" --search "*error*"
+  ```
+
+**注意事项**
+
+- 所有时间参数都基于系统的 UTC+8 时区
+- 日志搜索对大小写敏感
+- 通配符只在 `--search` 参数中有效
+- 多个过滤条件是"与"的关系，必须同时满足
+- 建议先使用较宽松的过滤条件，然后逐步缩小范围
+
 
 ## API 接口
 
