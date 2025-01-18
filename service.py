@@ -1,8 +1,10 @@
 # service.py
-from fastapi import FastAPI, BackgroundTasks, Body
+from fastapi import FastAPI, BackgroundTasks, Body, HTTPException
 from pydantic import BaseModel
 from pmsm.instance_manager import InstanceManager
 from pmsm.log_manager import LogManager
+import traceback
+from datetime import datetime
 
 app = FastAPI()
 instance_manager = InstanceManager()
@@ -33,6 +35,26 @@ def force_stop_instance(instance_name: str):
     return {"status": "force_stopping"}
 
 @app.get("/logs/{instance_name}")
-def get_logs(instance_name: str, start_time: str = None):
-    logs = log_manager.get_logs(instance_name, start_time)
-    return {"logs": logs}
+async def get_logs(instance_name: str, start_time: str = None):
+    try:
+        # 转换时间字符串为 datetime 对象
+        start_datetime = None
+        if start_time:
+            try:
+                start_datetime = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid datetime format. Use YYYY-MM-DD HH:MM:SS")
+
+        logs = log_manager.get_logs(instance_name, start_datetime)
+        if logs is None:
+            logs = []
+            
+        return {"status": "success", "logs": logs}
+    except Exception as e:
+        traceback.print_exc()  # 打印详细错误信息到控制台
+        raise HTTPException(status_code=500, detail=str(e))
+
+# 添加错误处理
+@app.exception_handler(Exception)
+async def generic_exception_handler(request, exc):
+    return {"status": "error", "detail": str(exc)}
