@@ -1,48 +1,60 @@
 import argparse
-import os
-from pathlib import Path
-from pmsm.instance_manager import InstanceManager
+import requests
 
 def main():
-    # 设置工作目录为项目根目录
-    project_root = Path(__file__).parent
-    os.chdir(project_root)
-
     parser = argparse.ArgumentParser(description="Python Minecraft Server Manager (PMSM)")
-    parser.add_argument("action", choices=["start", "list", "stop", "force-stop", "cmd"], help="Action to perform")
-    parser.add_argument("--instance", help="Instance name to start")
-    parser.add_argument("--cmd", nargs="+", help="Minecraft command to send to the instance")
-    
+    parser.add_argument("action", choices=["start", "list", "stop", "force-stop", "cmd", "logs"], help="Action to perform")
+    parser.add_argument("--instance", help="Instance name")
+    parser.add_argument("--cmd", nargs="+", help="Minecraft command to send")
+    parser.add_argument("--start-time", help="Log start time in format YYYY-MM-DD HH:MM:SS")
+
     args = parser.parse_args()
-    manager = InstanceManager()
+
+    base_url = "http://localhost:8000"
 
     if args.action == "start":
         if not args.instance:
             print("Error: --instance is required for 'start' action.")
             return
-        manager.start_instance(args.instance)
+        response = requests.post(f"{base_url}/start/{args.instance}")
+        print(response.json())
     elif args.action == "stop":
         if not args.instance:
             print("Error: --instance is required for 'stop' action.")
             return
-        manager.stop_instance(args.instance)
+        response = requests.post(f"{base_url}/stop/{args.instance}")
+        print(response.json())
     elif args.action == "force-stop":
         if not args.instance:
             print("Error: --instance is required for 'force-stop' action.")
             return
-        manager.force_stop_instance(args.instance)
+        response = requests.post(f"{base_url}/force_stop/{args.instance}")
+        print(response.json())
     elif args.action == "cmd":
         if not args.instance or not args.cmd:
             print("Error: --instance and --cmd are required for 'cmd' action.")
             return
-        # 将 --cmd 的多个值拼接为一个完整的命令
         command = " ".join(args.cmd)
-        manager.send_command(args.instance, command)
+        # 发送 JSON 请求体
+        response = requests.post(
+            f"{base_url}/cmd/{args.instance}",
+            json={"command": command}  # 注意这里是 JSON 格式
+        )
+        print(response.json())
+    elif args.action == "logs":
+        if not args.instance:
+            print("Error: --instance is required for 'logs' action.")
+            return
+        params = {}
+        if args.start_time:
+            params["start_time"] = args.start_time
+        response = requests.get(f"{base_url}/logs/{args.instance}", params=params)
+        logs = response.json().get("logs", [])
+        for log in logs:
+            print(f"{log['timestamp']} [{log['level']}] {log['message']}")
     elif args.action == "list":
-        instances = manager.list_instances()
-        print("Available instances:")
-        for instance in instances:
-            print(f" - {instance}")
+        # 列出实例的逻辑，可能需要通过API获取
+        print("List of instances not implemented yet.")
 
 if __name__ == "__main__":
     main()

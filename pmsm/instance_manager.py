@@ -5,6 +5,9 @@ import time
 import os
 from pmsm.config_manager import ConfigManager
 import threading
+from pmsm.log_manager import LogManager
+
+log_manager = LogManager()
 
 class InstanceManager:
     def __init__(self, instances_dir="instances"):
@@ -65,7 +68,7 @@ class InstanceManager:
 
         def read_output(pipe, prefix):
             for line in iter(pipe.readline, ""):
-                print(f"[{instance_name}][{prefix}] {line}", end="")
+                log_manager.add_log(instance_name, prefix, line.strip())
 
         threading.Thread(target=read_output, args=(process.stdout, "OUT")).start()
         threading.Thread(target=read_output, args=(process.stderr, "ERR")).start()
@@ -83,6 +86,7 @@ class InstanceManager:
         pid = self.processes[instance_name]
 
         # 检查进程是否存在
+        '''
         try:
             os.kill(pid, 0)
         except OSError:
@@ -90,7 +94,7 @@ class InstanceManager:
             del self.processes[instance_name]
             self._save_state()
             return
-
+        '''
         # 使用进程的标准输入文件发送命令
         try:
             with open(f"/proc/{pid}/fd/0", "w") as stdin:

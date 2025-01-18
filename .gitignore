@@ -8,4 +8,6 @@
 !pmsm/__init__.py
 !pmsm/config_manager.py
 !pmsm/instance_manager.py
+!pmsm/log_manager.py
 !.gitignore
+!service.py
